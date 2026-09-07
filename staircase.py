@@ -1,15 +1,14 @@
 import random
-from psychopy import visual, event, core, monitors
+from psychopy import visual, event, core, monitors, data
 
 mon = monitors.Monitor('laptop40')
 
 win = visual.Window(
-    size=[3840, 2160],
-    monitor = mon,
-    units = 'deg',
-    color = [0, 0, 0],
-    fullscr = True,
-    screen = 0
+    monitor=mon,
+    units='deg',
+    color=[0, 0, 0],
+    fullscr=True,
+    screen=0
 )
 
 SF = 4.0
@@ -28,7 +27,6 @@ target = visual.GratingStim(
     phase=0.25,
     pos=(0, 0)
 )
-
 flanker_top = visual.GratingStim(
     win=win,
     tex='sin',
@@ -40,7 +38,6 @@ flanker_top = visual.GratingStim(
     phase=0.25,
     pos=(0, offset)
 )
-
 flanker_bottom = visual.GratingStim(
     win=win,
     tex='sin',
@@ -52,14 +49,12 @@ flanker_bottom = visual.GratingStim(
     phase=0.25,
     pos=(0, -offset)
 )
-
 fixation = visual.TextStim(
     win=win,
     text='+',
     height=0.5,
     color='white'
 )
-
 message = visual.TextStim(
     win=win,
     text='',
@@ -69,7 +64,7 @@ message = visual.TextStim(
 )
 
 def show_interval(number, target_present, contrast):
-    message.text = str(number),
+    message.text = str(number)
     message.draw()
     fixation.draw()
     flanker_top.draw()
@@ -102,29 +97,31 @@ def run_trial(contrast):
     if 'escape' in keys:
         return None
 
-    response = int(keys[0])
-    return response == target_interval
+    return int(keys[0]) == target_interval
 
-instructions = visual.TextStim(
-    win=win,
-    text=("Two intervals will be shown, marked 1 and 2. \n\n"
-          "A faint patch appears between the two bright ones\n"
-          "in ONE of them.\n\n"
-          "Press 1 or 2 to say which.\n\n"
-          "Keep your eyes on the center.\n\n"
-          "Press space to begin."),
-    height=0.7,
-    color='white',
-    wrapWidth=20
+staircase = data.StairHandler(
+    startVal=0.20,
+    stepSizes=[0.25, 0.15, 0.10, 0.05],
+    stepType='log',
+    nUp=1,
+    nDown=3,
+    nReversals=8,
+    nTrials=50,
+    minVal=0.001,
+    maxVal=1.0
 )
 
-instructions.draw()
-win.flip()
-event.waitKeys(keyList=['space'])
+for contrast in staircase:
+    result = run_trial(contrast)
+    if result is None:
+        break
+    staircase.addResponse(int(result))
 
-
-correct = run_trial(0.10)
-print("correct:", correct)
+reversals = staircase.reversalIntensities
+print("reversals:", reversals)
+if len(reversals) >= 6:
+    threshold = sum(reversals[-6:]) / 6
+    print("threshold estimate:", threshold)
 
 win.close()
 core.quit()
